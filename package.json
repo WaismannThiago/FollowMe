@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "start:pm2": "pm2 start ecosystem.config.js"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.0.0",
@@ -16,18 +17,12 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "zod": "^3.22.0",
-    "pm2": "^5.3.0"
+    "pm2": "^5.3.0",
+    "superjson": "^1.12.2"
   },
   "devDependencies": {
-  "typescript": "^5.3.0",
-  "@types/react": "^18.2.0",
-  "@types/node": "^20.0.0"
-},
-"scripts": {
-  "dev": "next dev",
-  "build": "next build",
-  "start": "next start",
-  "start:pm2": "pm2 start ecosystem.config.js"
-}
-
+    "typescript": "^5.3.0",
+    "@types/react": "^18.2.0",
+    "@types/node": "^20.0.0"
+  }
 }
