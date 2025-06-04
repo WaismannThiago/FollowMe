@@ -21,6 +21,9 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Install trpc react-query
+        run: npm install @trpc/react-query superjson
+
       - name: Build project
         run: npm run build
 
