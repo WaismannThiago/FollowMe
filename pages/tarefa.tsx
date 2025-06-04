@@ -13,11 +13,10 @@ type Task = {
 };
 
 type TarefaPageProps = {
-  task: string | null; // Aqui a task vem serializada em JSON string
+  task: superjson.SuperJSONResult | null;
 };
 
 export default function Tarefa({ task }: TarefaPageProps) {
-  // Deserializa o objeto recebido
   const parsedTask: Task | null = task ? superjson.deserialize(task) : null;
 
   const router = useRouter();
@@ -85,18 +84,17 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   }
 
   try {
-    const ctx = {}; // se precisar de contexto, configure aqui
+    const ctx = {}; // Configure seu contexto se precisar
     const task = await appRouter.createCaller(ctx).task.byId({ id });
 
     if (!task) {
       return { props: { task: null } };
     }
 
-    // Serializa para enviar via props
-    const serializedTask = superjson.serialize(task).json;
+    const serializedTask = superjson.serialize(task);
 
     return { props: { task: serializedTask } };
-  } catch (error) {
+  } catch {
     return { props: { task: null } };
   }
 };
