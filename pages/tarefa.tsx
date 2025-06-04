@@ -1,15 +1,9 @@
-// pages/tarefa.tsx
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/router';
 import { trpc } from '../utils/trpc';
 import type { GetServerSideProps } from 'next';
 import superjson from 'superjson';
 import { appRouter } from '../server/routers/appRouter';
-import { createProxySSGHelpers } from '@trpc/react-query';
-
-
-
-
 
 type Task = {
   id: string;
@@ -19,19 +13,22 @@ type Task = {
 };
 
 type TarefaPageProps = {
-  task: Task | null;
+  task: string | null; // Aqui a task vem serializada em JSON string
 };
 
 export default function Tarefa({ task }: TarefaPageProps) {
-  const router = useRouter();
-  const isEditing = Boolean(task);
+  // Deserializa o objeto recebido
+  const parsedTask: Task | null = task ? superjson.deserialize(task) : null;
 
-  const [titulo, setTitulo] = useState(task?.titulo || '');
-  const [descricao, setDescricao] = useState(task?.descricao || '');
+  const router = useRouter();
+  const isEditing = Boolean(parsedTask);
+
+  const [titulo, setTitulo] = useState(parsedTask?.titulo || '');
+  const [descricao, setDescricao] = useState(parsedTask?.descricao || '');
   const [error, setError] = useState<string | null>(null);
 
   const createTask = trpc.task.create.useMutation({
-    onSuccess: (newTask) => router.push('/'),
+    onSuccess: () => router.push('/'),
     onError: (err) => setError(err.message),
   });
 
@@ -48,8 +45,8 @@ export default function Tarefa({ task }: TarefaPageProps) {
     }
     setError(null);
 
-    if (isEditing && task) {
-      updateTask.mutate({ id: task.id, titulo, descricao });
+    if (isEditing && parsedTask) {
+      updateTask.mutate({ id: parsedTask.id, titulo, descricao });
     } else {
       createTask.mutate({ titulo, descricao });
     }
@@ -87,20 +84,19 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     return { props: { task: null } };
   }
 
-  const ssg = createProxySSGHelpers({
-  router: appRouter,
-  ctx: {},
-  transformer: superjson,
-});
-
-  
   try {
-    const task = await ssg.fetchQuery('task.byId', { id });
+    const ctx = {}; // se precisar de contexto, configure aqui
+    const task = await appRouter.createCaller(ctx).task.byId({ id });
+
     if (!task) {
       return { props: { task: null } };
     }
-    return { props: { task } };
-  } catch {
+
+    // Serializa para enviar via props
+    const serializedTask = superjson.serialize(task).json;
+
+    return { props: { task: serializedTask } };
+  } catch (error) {
     return { props: { task: null } };
   }
 };
