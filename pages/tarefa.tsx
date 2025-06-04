@@ -3,9 +3,9 @@ import { useState } from 'react';
 import { useRouter } from 'next/router';
 import { trpc } from '../utils/trpc';
 import type { GetServerSideProps } from 'next';
-import superjson, { SuperJSONResult } from 'superjson';
 import { appRouter } from '../server/routers/appRouter';
 import { createSSGHelpers } from '@trpc/react/ssg';
+import superjson from 'superjson';
 
 type Task = {
   id: string;
@@ -15,18 +15,15 @@ type Task = {
 };
 
 type TarefaPageProps = {
-  task: SuperJSONResult | null;
+  task: Task | null;
 };
 
 export default function Tarefa({ task }: TarefaPageProps) {
-  // Desserializa o objeto recebido do servidor
-  const parsedTask: Task | null = task ? superjson.deserialize(task) : null;
-
   const router = useRouter();
-  const isEditing = Boolean(parsedTask);
+  const isEditing = Boolean(task);
 
-  const [titulo, setTitulo] = useState(parsedTask?.titulo || '');
-  const [descricao, setDescricao] = useState(parsedTask?.descricao || '');
+  const [titulo, setTitulo] = useState(task?.titulo || '');
+  const [descricao, setDescricao] = useState(task?.descricao || '');
   const [error, setError] = useState<string | null>(null);
 
   const createTask = trpc.task.create.useMutation({
@@ -47,8 +44,8 @@ export default function Tarefa({ task }: TarefaPageProps) {
     }
     setError(null);
 
-    if (isEditing && parsedTask) {
-      updateTask.mutate({ id: parsedTask.id, titulo, descricao });
+    if (isEditing && task) {
+      updateTask.mutate({ id: task.id, titulo, descricao });
     } else {
       createTask.mutate({ titulo, descricao });
     }
@@ -88,20 +85,13 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
 
   const ssg = createSSGHelpers({
     router: appRouter,
-    ctx: {}, // coloque o contexto necessário aqui, se houver
+    ctx: {}, // seu contexto, se tiver
     transformer: superjson,
   });
 
   try {
-    const task = await ssg.task.byId.fetch({ id }); // usando o novo método recomendado para chamada
-    if (!task) {
-      return { props: { task: null } };
-    }
-    return {
-      props: {
-        task: superjson.serialize(task), // serializa para enviar para o client
-      },
-    };
+    const task = await ssg.task.byId.fetch({ id });
+    return { props: { task: task || null } };
   } catch {
     return { props: { task: null } };
   }
