@@ -8,7 +8,9 @@ export default function NovaTarefa() {
   const router = useRouter();
 
   const createTask = trpc.task.create.useMutation({
-    onSuccess: () => router.push('/'),
+    onSuccess: () => {
+      router.push('/');
+    },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
