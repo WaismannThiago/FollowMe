@@ -1,9 +1,11 @@
+// pages/tarefa.tsx
 import { useState } from 'react';
 import { useRouter } from 'next/router';
 import { trpc } from '../utils/trpc';
 import type { GetServerSideProps } from 'next';
-import superjson from 'superjson';
+import superjson, { SuperJSONResult } from 'superjson';
 import { appRouter } from '../server/routers/appRouter';
+import { createSSGHelpers } from '@trpc/react/ssg';
 
 type Task = {
   id: string;
@@ -13,10 +15,11 @@ type Task = {
 };
 
 type TarefaPageProps = {
-  task: superjson.SuperJSONResult | null;
+  task: SuperJSONResult | null;
 };
 
 export default function Tarefa({ task }: TarefaPageProps) {
+  // Desserializa o objeto recebido do servidor
   const parsedTask: Task | null = task ? superjson.deserialize(task) : null;
 
   const router = useRouter();
@@ -83,17 +86,22 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     return { props: { task: null } };
   }
 
-  try {
-    const ctx = {}; // Configure seu contexto se precisar
-    const task = await appRouter.createCaller(ctx).task.byId({ id });
+  const ssg = createSSGHelpers({
+    router: appRouter,
+    ctx: {}, // coloque o contexto necessário aqui, se houver
+    transformer: superjson,
+  });
 
+  try {
+    const task = await ssg.task.byId.fetch({ id }); // usando o novo método recomendado para chamada
     if (!task) {
       return { props: { task: null } };
     }
-
-    const serializedTask = superjson.serialize(task);
-
-    return { props: { task: serializedTask } };
+    return {
+      props: {
+        task: superjson.serialize(task), // serializa para enviar para o client
+      },
+    };
   } catch {
     return { props: { task: null } };
   }
