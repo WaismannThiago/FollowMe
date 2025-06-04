@@ -18,20 +18,20 @@ jobs:
         with:
           node-version: '18'
 
-      - name: Install dependencies and generate package-lock.json
+      - name: Install dependencies
         run: npm install
 
       - name: Build project
         run: npm run build
 
-      - name: Deploy entire project via SCP to Azure Server
+      - name: Deploy via SCP to Azure Server
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.AZURE_HOST }}
           username: ${{ secrets.AZURE_USER }}
           key: ${{ secrets.AZURE_SSH_KEY }}
           port: 22
-          source: './'
+          source: './*'
           target: '/var/www/FollowMe-app'
 
       - name: SSH - Install dependencies and restart app with PM2
@@ -43,7 +43,6 @@ jobs:
           port: 22
           script: |
             cd /var/www/FollowMe-app
-            npm install -g pm2
-            npm ci
+            npm install
             npm run build
-            pm2 restart ecosystem.config.js || pm2 start ecosystem.config.js
+            npx pm2 restart ecosystem.config.js || npx pm2 start ecosystem.config.js
