@@ -4,8 +4,7 @@ import { useRouter } from 'next/router';
 import { trpc } from '../utils/trpc';
 import type { GetServerSideProps } from 'next';
 import { appRouter } from '../server/routers/appRouter';
-import { createSSGHelpers } from '@trpc/react/ssg';
-import superjson from 'superjson';
+import { createContext } from '../server/context'; // ajuste o path se necessário
 
 type Task = {
   id: string;
@@ -79,19 +78,14 @@ export default function Tarefa({ task }: TarefaPageProps) {
 export const getServerSideProps: GetServerSideProps = async (context) => {
   const id = context.query.id as string | undefined;
 
-  if (!id) {
-    return { props: { task: null } };
-  }
+  if (!id) return { props: { task: null } };
 
-  const ssg = createSSGHelpers({
-    router: appRouter,
-    ctx: {}, // seu contexto, se tiver
-    transformer: superjson,
-  });
+  const ctx = await createContext(); // depende de como você configurou o contexto
+  const caller = appRouter.createCaller(ctx);
 
   try {
-    const task = await ssg.task.byId.fetch({ id });
-    return { props: { task: task || null } };
+    const task = await caller.task.byId({ id });
+    return { props: { task } };
   } catch {
     return { props: { task: null } };
   }
