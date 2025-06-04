@@ -1,29 +1,22 @@
 {
-  "name": "task-manager-trpc",
+  "name": "trpc-todo-app",
   "version": "1.0.0",
-  "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
-    "start:pm2": "pm2 start ecosystem.config.js"
+    "start": "next start"
   },
   "dependencies": {
-    "@tanstack/react-query": "^5.0.0",
-    "@trpc/client": "^11.2.0",
-    "@trpc/react-query": "^11.2.0",
-    "@trpc/server": "^11.2.0",
-    "@trpc/next": "^11.2.0",
+    "@tanstack/react-query": "^4.29.7",
+    "@trpc/client": "^10.45.0",
+    "@trpc/react-query": "^10.45.0",
+    "@trpc/server": "^10.45.0",
     "next": "15.0.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "zod": "^3.22.0",
-    "pm2": "^5.3.0",
-    "superjson": "^1.12.2"
+    "zod": "^3.22.4"
   },
   "devDependencies": {
-    "typescript": "^5.3.0",
-    "@types/react": "^18.2.0",
-    "@types/node": "^20.0.0"
+    "typescript": "^5.3.3"
   }
 }
