@@ -5,7 +5,8 @@ import { trpc } from '../utils/trpc';
 import type { GetServerSideProps } from 'next';
 import superjson from 'superjson';
 import { appRouter } from '../server/routers/appRouter';
-import { createSSGHelpers } from '@trpc/react/ssg';
+import { createSSGHelpers } from '@trpc/react-query/ssg';
+
 
 type Task = {
   id: string;
