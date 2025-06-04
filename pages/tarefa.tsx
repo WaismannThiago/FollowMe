@@ -87,12 +87,13 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     return { props: { task: null } };
   }
 
-  const ssg = createSSGHelpers({
-    router: appRouter,
-    ctx: {},
-    transformer: superjson,
-  });
+  const ssg = createProxySSGHelpers({
+  router: appRouter,
+  ctx: {},
+  transformer: superjson,
+});
 
+  
   try {
     const task = await ssg.fetchQuery('task.byId', { id });
     if (!task) {
