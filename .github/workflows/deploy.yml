@@ -18,6 +18,9 @@ jobs:
         with:
           node-version: '18'
 
+      - name: Install specific missing packages
+        run: npm install @trpc/react-query/ssg superjson
+
       - name: Install dependencies
         run: npm install
 
