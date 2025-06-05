@@ -7,51 +7,66 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    env:
+      APP_DIR: '/var/www/FollowMe-app'
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      # 1. Checkout do código
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0  # Importante para garantir o histórico completo
 
-      - name: Verify project files
+      # 2. Verificação do package.json
+      - name: Verify project structure
         run: |
           if [ ! -f package.json ]; then
-            echo "❌ package.json not found!"
+            echo "❌ ERRO: package.json não encontrado!"
             exit 1
           fi
-          ls -la
+          
+          # Gera o package-lock.json se não existir
+          if [ ! -f package-lock.json ]; then
+            echo "⚠ AVISO: package-lock.json não encontrado, gerando novo..."
+            npm install --package-lock-only
+            git add package-lock.json || true
+          fi
 
+      # 3. Configuração do Node.js
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
+          cache: 'npm'  # Habilita cache de dependências
 
+      # 4. Instalação de dependências
       - name: Install dependencies
-        run: |
-          npm ci --no-audit
+        run: npm ci --no-audit --prefer-offline
 
+      # 5. Build do projeto
       - name: Build project
         run: npm run build
 
+      # 6. Verificação do build
       - name: Verify build output
         run: |
-          [ -d .next ] || (echo "❌ Build failed - no .next directory" && exit 1)
+          [ -d .next ] || (echo "❌ ERRO: Build falhou - diretório .next não encontrado" && exit 1)
 
-      - name: Deploy to Azure via SCP
+      # 7. Deploy via SCP
+      - name: Deploy to Azure
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.AZURE_HOST }}
           username: ${{ secrets.AZURE_USER }}
           key: ${{ secrets.AZURE_SSH_KEY }}
           port: 22
-          source: '.[!.]*'  # Copies all files except hidden ones
-          target: '/var/www/FollowMe'
-          strip_components: 0
+          source: '.[!.]*'  # Copia todos arquivos não ocultos
+          target: ${{ env.APP_DIR }}
           overwrite: true
+          strip_components: 0
 
-      - name: SSH - Setup and Start Application
+      # 8. Configuração no servidor
+      - name: Setup on Azure
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.AZURE_HOST }}
@@ -59,8 +74,17 @@ jobs:
           key: ${{ secrets.AZURE_SSH_KEY }}
           port: 22
           script: |
-            cd /var/www/FollowMe
-            npm ci --production --no-audit
+            cd ${{ env.APP_DIR }}
+            
+            # Instalação segura de dependências
+            if [ -f package-lock.json ]; then
+              npm ci --production --no-audit
+            else
+              echo "⚠ AVISO: package-lock.json não encontrado no servidor, usando npm install"
+              npm install --production --no-audit
+            fi
+            
+            # Gerenciamento do PM2
             npm install pm2 -g
             pm2 delete FollowMe || true
             pm2 start npm --name "FollowMe" -- start
