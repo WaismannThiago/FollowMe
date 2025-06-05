@@ -1,6 +1,6 @@
 'use client';
 
-import { trpc } from '../../utils/trpc';
+import { trpc } from '@/utils/trpc';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
