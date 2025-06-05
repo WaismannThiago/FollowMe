@@ -1,6 +1,5 @@
 'use client'; // Added because we're using client-side hooks and interactivity
-
-import { trpc } from '../utils/trpc';
+import { trpc } from '@/utils/trpc';
 import Link from 'next/link'; // Using Next.js Link instead of <a> tags
 import { useRouter } from 'next/navigation'; // For better navigation
 import { useEffect } from 'react';
