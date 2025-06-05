@@ -1,4 +1,4 @@
-name: Deploy to Azure Ubuntu Server
+name: Deploy Task Manager to Azure Ubuntu Server
 
 on:
   push:
@@ -16,13 +16,13 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '18'
+          node-version: '20'  # Updated to Node 20 (LTS)
 
       - name: Install dependencies
-        run: npm install
-
-      - name: Install trpc react-query
-        run: npm install @trpc/react-query superjson
+        run: |
+          npm install
+          npm install @trpc/server @trpc/client @trpc/react-query @tanstack/react-query zod
+          npm install --save-dev @types/node
 
       - name: Build project
         run: npm run build
@@ -35,7 +35,8 @@ jobs:
           key: ${{ secrets.AZURE_SSH_KEY }}
           port: 22
           source: './*'
-          target: '/var/www/FollowMe-app'
+          target: '/var/www/task-manager'
+          strip_components: 1
 
       - name: SSH - Install dependencies and restart app with PM2
         uses: appleboy/ssh-action@v1.0.3
@@ -45,7 +46,7 @@ jobs:
           key: ${{ secrets.AZURE_SSH_KEY }}
           port: 22
           script: |
-            cd /var/www/FollowMe-app
-            npm install
-            npm run build
-            npx pm2 restart ecosystem.config.js || npx pm2 start ecosystem.config.js
+            cd /var/www/task-manager
+            npm install --production
+            npm install pm2 -g
+            npx pm2 restart task-manager || npx pm2 start npm --name "task-manager" -- start
