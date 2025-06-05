@@ -19,24 +19,21 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Generate package-lock.json if missing
-        id: generate-lock
-        run: |
-          if [ ! -f package-lock.json ]; then
-            echo "Generating package-lock.json..."
-            npm install --package-lock-only
-          else
-            echo "package-lock.json already exists"
-          fi
-
       - name: Install dependencies
         run: |
+          npm install --package-lock-only
           npm ci --no-audit
           npm install @trpc/server @trpc/client @trpc/react-query @tanstack/react-query zod superjson
-          npm install --save-dev @types/node @types/react @types/react-dom
+          npm install --save-dev @types/node @types/react @types/react-dom typescript
 
       - name: Build project
-        run: npm run build
+        run: |
+          # Verifica estrutura de arquivos
+          [ -f server/trpc.ts ] || (echo "❌ server/trpc.ts não encontrado" && exit 1)
+          [ -f server/routers/index.ts ] || (echo "❌ server/routers/index.ts não encontrado" && exit 1)
+          [ -f utils/trpc.ts ] || (echo "❌ utils/trpc.ts não encontrado" && exit 1)
+          
+          npm run build
 
       - name: Deploy to Azure via SCP
         uses: appleboy/scp-action@v0.1.7
@@ -45,7 +42,7 @@ jobs:
           username: ${{ secrets.AZURE_USER }}
           key: ${{ secrets.AZURE_SSH_KEY }}
           port: 22
-          source: './.next,public,package.json,package-lock.json,next.config.js,next-env.d.ts,tsconfig.json'
+          source: './.next,public,package.json,package-lock.json,next.config.js,next-env.d.ts,tsconfig.json,server,utils'
           target: '/var/www/FollowMe-app'
           strip_components: 1
 
