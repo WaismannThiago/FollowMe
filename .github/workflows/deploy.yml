@@ -1,4 +1,4 @@
-name: Deploy Task Manager App to Azure
+name: Deploy FollowMe App to Azure
 
 on:
   push:
@@ -14,17 +14,30 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Verify project files
+        run: |
+          if [ ! -f package.json ]; then
+            echo "❌ package.json not found!"
+            exit 1
+          fi
+          ls -la
+
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '20'
+          cache: 'npm'
 
       - name: Install dependencies
         run: |
-          npm install --no-audit
+          npm ci --no-audit
 
       - name: Build project
         run: npm run build
+
+      - name: Verify build output
+        run: |
+          [ -d .next ] || (echo "❌ Build failed - no .next directory" && exit 1)
 
       - name: Deploy to Azure via SCP
         uses: appleboy/scp-action@v0.1.7
@@ -33,9 +46,10 @@ jobs:
           username: ${{ secrets.AZURE_USER }}
           key: ${{ secrets.AZURE_SSH_KEY }}
           port: 22
-          source: 'app/*,.next,public,package.json,package-lock.json,tsconfig.json,next.config.js'
+          source: '.[!.]*'  # Copies all files except hidden ones
           target: '/var/www/FollowMe'
-          strip_components: 1
+          strip_components: 0
+          overwrite: true
 
       - name: SSH - Setup and Start Application
         uses: appleboy/ssh-action@v1.0.3
@@ -45,8 +59,8 @@ jobs:
           key: ${{ secrets.AZURE_SSH_KEY }}
           port: 22
           script: |
-            cd /var/www/task-manager-app
-            npm ci --production
+            cd /var/www/FollowMe
+            npm ci --production --no-audit
             npm install pm2 -g
             pm2 delete FollowMe || true
             pm2 start npm --name "FollowMe" -- start
