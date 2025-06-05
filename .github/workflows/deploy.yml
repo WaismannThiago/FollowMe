@@ -14,45 +14,34 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Verify repository contents
-        run: |
-          ls -la
-          echo "Contents of the repository:"
-          find . -type f -not -path "./.git/*" -not -path "./node_modules/*"
-
-      - name: Setup Node.js (without npm cache)
+      - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '20'
-          # Removido o cache para evitar problemas com lock file
-
-      - name: Create package-lock.json if missing
-        id: create-lock
-        run: |
-          if [ ! -f package-lock.json ]; then
-            echo "Generating new package-lock.json..."
-            npm install --package-lock-only
-            git config --global user.email "actions@github.com"
-            git config --global user.name "GitHub Actions"
-            git add package-lock.json
-            git commit -m "Auto-generated package-lock.json" || echo "No changes to commit"
-            # Não fazemos push aqui para evitar loops infinitos
-            echo "lock_file_created=true" >> $GITHUB_OUTPUT
-          else
-            echo "package-lock.json already exists"
-            echo "lock_file_created=false" >> $GITHUB_OUTPUT
-          fi
 
       - name: Install dependencies
         run: |
-          npm ci --no-audit --ignore-scripts
+          npm ci --no-audit
           npm install @trpc/server @trpc/client @trpc/react-query @tanstack/react-query zod superjson
           npm install --save-dev @types/node @types/react @types/react-dom
 
-      - name: Build project
-        run: npm run build
+      - name: Configure Build Cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            .next/cache
+            node_modules
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**/*.ts', '**/*.tsx', '**/*.json') }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-
 
-      - name: Validate build output
+      - name: Build project
+        run: |
+          # Configura caminhos absolutos para aliases
+          echo "Compiling with TypeScript paths..."
+          npm run build || (echo "Build failed, checking paths configuration..." && exit 1)
+
+      - name: Verify build output
         run: |
           [ -d .next/static ] || (echo "❌ Build failed - no static files generated" && exit 1)
 
@@ -63,7 +52,7 @@ jobs:
           username: ${{ secrets.AZURE_USER }}
           key: ${{ secrets.AZURE_SSH_KEY }}
           port: 22
-          source: './.next,public,package.json,package-lock.json,next.config.js'
+          source: './.next,public,package.json,package-lock.json,next.config.js,next-env.d.ts,tsconfig.json'
           target: '/var/www/FollowMe-app'
           strip_components: 1
 
@@ -76,7 +65,7 @@ jobs:
           port: 22
           script: |
             cd /var/www/FollowMe-app
-            npm ci --production --no-audit
+            npm ci --production
             npm install pm2 -g
             pm2 delete FollowMe-app || true
             pm2 start npm --name "FollowMe-app" -- start
