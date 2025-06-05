@@ -1,4 +1,4 @@
-name: Deploy FollowMe-app to Azure
+name: Deploy FollowMe App to Azure
 
 on:
   push:
@@ -11,16 +11,28 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Garante que todos os arquivos sejam baixados
 
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '20'
-          cache: 'npm'
+          cache: 'npm'  # Opcional - pode remover se ainda causar problemas
+
+      - name: Generate lock file if missing
+        id: lock-file
+        run: |
+          if [ ! -f package-lock.json ]; then
+            npm install
+            echo "Lock file generated"
+          else
+            echo "Lock file exists"
+          fi
 
       - name: Install dependencies
         run: |
-          npm ci
+          npm ci --no-audit
           npm install @trpc/server @trpc/client @trpc/react-query @tanstack/react-query zod superjson
           npm install --save-dev @types/node @types/react @types/react-dom
 
@@ -29,6 +41,7 @@ jobs:
         with:
           path: |
             .next/cache
+            node_modules
           key: ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**/*.ts', '**/*.tsx') }}
           restore-keys: |
             ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-
@@ -48,7 +61,7 @@ jobs:
           key: ${{ secrets.AZURE_SSH_KEY }}
           port: 22
           source: './.next,public,package.json,package-lock.json,next.config.js'
-          target: '/var/www/FollowMe-app'
+          target: '/var/www/FollowMe-app'  # Corrigido para o target correto
           strip_components: 1
 
       - name: SSH - Setup and Start Application
@@ -60,10 +73,9 @@ jobs:
           port: 22
           script: |
             cd /var/www/FollowMe-app
-            npm ci --production
+            npm ci --production --no-audit
             npm install pm2 -g
             npx pm2 delete FollowMe-app || true
             npx pm2 start npm --name "FollowMe-app" -- start
             pm2 save
             pm2 startup
-
