@@ -1,9 +1,8 @@
-name: Deploy Task Manager to Azure Ubuntu Server
+name: Deploy FollowMe-app to Azure
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
 
 jobs:
   deploy:
@@ -13,16 +12,17 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set up Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '20'
+          cache: 'npm'
 
       - name: Install dependencies
         run: |
-          npm install
-          npm install @trpc/server @trpc/client @trpc/react-query @tanstack/react-query zod
-          npm install --save-dev @types/node @next/font
+          npm ci
+          npm install @trpc/server @trpc/client @trpc/react-query @tanstack/react-query zod superjson
+          npm install --save-dev @types/node @types/react @types/react-dom
 
       - name: Configure Build Cache
         uses: actions/cache@v3
@@ -36,18 +36,22 @@ jobs:
       - name: Build project
         run: npm run build
 
-      - name: Deploy via SCP to Azure Server
+      - name: Validate build output
+        run: |
+          [ -d .next/static ] || (echo "❌ Build failed - no static files generated" && exit 1)
+
+      - name: Deploy to Azure via SCP
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.AZURE_HOST }}
           username: ${{ secrets.AZURE_USER }}
           key: ${{ secrets.AZURE_SSH_KEY }}
           port: 22
-          source: './*'
+          source: './.next,public,package.json,package-lock.json,next.config.js'
           target: '/var/www/FollowMe-app'
           strip_components: 1
 
-      - name: SSH - Install dependencies and restart app with PM2
+      - name: SSH - Setup and Start Application
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.AZURE_HOST }}
@@ -56,6 +60,10 @@ jobs:
           port: 22
           script: |
             cd /var/www/FollowMe-app
-            npm install --production
+            npm ci --production
             npm install pm2 -g
-            npx pm2 restart task-manager || npx pm2 start npm --name "task-manager" -- start
+            npx pm2 delete FollowMe-app || true
+            npx pm2 start npm --name "FollowMe-app" -- start
+            pm2 save
+            pm2 startup
+
