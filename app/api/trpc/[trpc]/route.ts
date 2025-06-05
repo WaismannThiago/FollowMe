@@ -1,7 +1,21 @@
-import { createNextApiHandler } from '@trpc/server/adapters/next';
+import { fetchRequestHandler } from '@trpc/server/adapters/fetch';
 import { appRouter } from '@/server/router';
+import { createContext } from '@/server/context';
 
-export default createNextApiHandler({
-  router: appRouter,
-  createContext: () => ({}),
-});
+export async function GET(request: Request) {
+  return fetchRequestHandler({
+    endpoint: '/api/trpc',
+    req: request,
+    router: appRouter,
+    createContext,
+  });
+}
+
+export async function POST(request: Request) {
+  return fetchRequestHandler({
+    endpoint: '/api/trpc',
+    req: request,
+    router: appRouter,
+    createContext,
+  });
+}
