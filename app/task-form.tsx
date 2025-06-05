@@ -1,6 +1,6 @@
 'use client';
 
-import { trpc } from './trpc-client';
+import { trpc } from './trpc-client'; // Certifique-se que está apontando para o trpc-client correto
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -9,21 +9,23 @@ export default function TaskForm({ searchParams }: { searchParams: { id?: string
   const [titulo, setTitulo] = useState('');
   const [descricao, setDescricao] = useState('');
 
-  const taskQuery = trpc.task.list.useQuery(undefined, {
+  // Consulta apenas se houver ID
+  const taskListQuery = trpc.task.list.useQuery(undefined, {
     enabled: !!searchParams.id,
   });
+
   const createTask = trpc.task.create.useMutation();
   const updateTask = trpc.task.update.useMutation();
 
   useEffect(() => {
-    if (searchParams.id && taskQuery.data) {
-      const task = taskQuery.data.find((t) => t.id === searchParams.id);
+    if (searchParams.id && taskListQuery.data) {
+      const task = taskListQuery.data.find((t) => t.id === searchParams.id);
       if (task) {
         setTitulo(task.titulo);
         setDescricao(task.descricao || '');
       }
     }
-  }, [searchParams.id, taskQuery.data]);
+  }, [searchParams.id, taskListQuery.data]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,16 +44,18 @@ export default function TaskForm({ searchParams }: { searchParams: { id?: string
       <h1>{searchParams.id ? 'Editar Tarefa' : 'Nova Tarefa'}</h1>
       <form onSubmit={handleSubmit}>
         <div>
-          <label>Título:</label>
+          <label htmlFor="titulo">Título:</label>
           <input
+            id="titulo"
             value={titulo}
             onChange={(e) => setTitulo(e.target.value)}
             required
           />
         </div>
         <div>
-          <label>Descrição (opcional):</label>
+          <label htmlFor="descricao">Descrição (opcional):</label>
           <textarea
+            id="descricao"
             value={descricao}
             onChange={(e) => setDescricao(e.target.value)}
           />
