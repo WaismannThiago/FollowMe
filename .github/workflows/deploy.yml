@@ -44,7 +44,7 @@ jobs:
           key: ${{ secrets.AZURE_SSH_KEY }}
           port: 22
           source: './*'
-          target: '/var/www/task-manager'
+          target: '/var/www/FollowMe-app'
           strip_components: 1
 
       - name: SSH - Install dependencies and restart app with PM2
@@ -55,7 +55,7 @@ jobs:
           key: ${{ secrets.AZURE_SSH_KEY }}
           port: 22
           script: |
-            cd /var/www/task-manager
+            cd /var/www/FollowMe-app
             npm install --production
             npm install pm2 -g
             npx pm2 restart task-manager || npx pm2 start npm --name "task-manager" -- start
