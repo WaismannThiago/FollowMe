@@ -16,13 +16,22 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '20'  # Updated to Node 20 (LTS)
+          node-version: '20'
 
       - name: Install dependencies
         run: |
           npm install
           npm install @trpc/server @trpc/client @trpc/react-query @tanstack/react-query zod
-          npm install --save-dev @types/node
+          npm install --save-dev @types/node @next/font
+
+      - name: Configure Build Cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            .next/cache
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**/*.ts', '**/*.tsx') }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-
 
       - name: Build project
         run: npm run build
