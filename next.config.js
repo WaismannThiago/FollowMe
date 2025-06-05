@@ -1,14 +1,13 @@
-const path = require('path')
-const paths = require('./paths')
+const path = require('path');
 
-const nextConfig = {
+module.exports = {
   webpack: (config) => {
     config.resolve.alias = {
       ...config.resolve.alias,
-      ...paths
+      '@': path.resolve(__dirname),
+      '@/utils': path.resolve(__dirname, 'utils'),
+      '@/server': path.resolve(__dirname, 'server')
     }
     return config
   }
 }
-
-module.exports = nextConfig
